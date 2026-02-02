@@ -8,7 +8,9 @@
     <meta name="theme-color" content="#000000">
     <title>Habit OS</title>
     <link rel="manifest" href="/manifest.json">
+    
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
         :root {
@@ -18,76 +20,58 @@
             --text-primary: #ffffff;
             --text-secondary: #86868b;
             --font-stack: "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif;
-            
-            /* Tiers Colors */
             --color-blue: #0A84FF;
             --color-bronze: #D48C45;
             --color-silver: #E0E0E0;
             --color-gold: #FFD700;
+            --color-green: #30d158;
         }
 
         body {
-            background: var(--bg-gradient);
-            color: var(--text-primary);
-            font-family: var(--font-stack);
-            min-height: 100vh; margin: 0; padding: 20px;
-            box-sizing: border-box; display: flex; flex-direction: column; overflow-x: hidden;
-            /* Empêche le rebond élastique sur iOS pour faire plus "App" */
-            overscroll-behavior-y: none; 
+            background: var(--bg-gradient); color: var(--text-primary); font-family: var(--font-stack);
+            min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; overflow-x: hidden; overscroll-behavior-y: none;
         }
 
-        /* --- HEADER & SETTINGS --- */
+        /* HEADER */
         header { width: 100%; margin-bottom: 30px; display: flex; flex-direction: column; align-items: center; position: relative; z-index: 10; }
-        
         .header-top { display: flex; align-items: center; justify-content: center; width: 100%; position: relative; margin-bottom: 20px; }
-        
         h1 { font-weight: 700; text-transform: uppercase; letter-spacing: 3px; font-size: 0.8rem; color: var(--text-secondary); margin: 0; opacity: 0.6; }
 
-        /* Bouton Settings (Roue dentée) */
-        .settings-btn {
-            position: absolute; right: 0; top: -5px;
-            background: transparent; border: none; color: var(--text-secondary);
-            font-size: 1.2rem; cursor: pointer; transition: 0.3s;
-        }
+        /* Indicateur de statut (Connecté/Déconnecté) */
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #ff453a; margin-left: 8px; box-shadow: 0 0 5px rgba(255,69,58,0.5); transition: 0.3s; }
+        .status-dot.online { background: var(--color-green); box-shadow: 0 0 5px rgba(48, 209, 88, 0.5); }
+
+        .settings-btn { position: absolute; right: 0; top: -5px; background: transparent; border: none; color: var(--text-secondary); font-size: 1.2rem; cursor: pointer; transition: 0.3s; }
         .settings-btn:hover { color: white; transform: rotate(90deg); }
 
         .toggle-add-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: white; width: 36px; height: 36px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; }
         .toggle-add-btn:hover { background: white; color: black; transform: scale(1.1); }
         .toggle-add-btn.active { transform: rotate(135deg); background: #ff453a; border-color: #ff453a; }
-
         .add-wrapper { position: absolute; top: 50px; width: 100%; display: flex; justify-content: center; opacity: 0; pointer-events: none; transform: translateY(-10px) scale(0.95); transition: all 0.3s; }
         .add-wrapper.open { opacity: 1; pointer-events: all; transform: translateY(0) scale(1); }
+        input[type="text"], input[type="email"] { background: rgba(30, 30, 30, 0.9); border: 1px solid rgba(255,255,255,0.2); padding: 12px 24px; border-radius: 30px; color: white; font-size: 1rem; width: 100%; max-width: 350px; outline: none; backdrop-filter: blur(20px); box-shadow: 0 20px 50px rgba(0,0,0,0.6); }
 
-        input[type="text"] { background: rgba(30, 30, 30, 0.9); border: 1px solid rgba(255,255,255,0.2); padding: 12px 24px; border-radius: 30px; color: white; font-size: 1rem; width: 100%; max-width: 350px; outline: none; backdrop-filter: blur(20px); box-shadow: 0 20px 50px rgba(0,0,0,0.6); }
-
-        /* --- GRID DASHBOARD --- */
+        /* GRID */
         .habits-container { width: 100%; max-width: 1600px; margin: 0 auto; display: grid; gap: 20px; padding-bottom: 40px; grid-template-columns: 1fr; align-content: start; }
         @media (min-width: 600px) { .habits-container { grid-template-columns: repeat(2, 1fr); } }
         @media (min-width: 1000px) { .habits-container { grid-template-columns: repeat(3, 1fr); } }
         @media (min-width: 1400px) { .habits-container { grid-template-columns: repeat(4, 1fr); } }
 
-        /* --- CARTE HABITUDE --- */
+        /* CARDS */
         .habit-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 24px; padding: 24px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2); display: flex; flex-direction: column; width: 100%; box-sizing: border-box; transition: transform 0.3s ease, border-color 0.3s; position: relative; }
         .habit-card:hover { transform: translateY(-4px); border-color: rgba(255,255,255,0.15); }
-
         .habit-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; min-height: 30px; }
         .habit-info { display: flex; flex-direction: column; gap: 6px; }
-        
-        .habit-name { 
-            font-size: 1.1rem; font-weight: 600; color: white; 
-            cursor: pointer; position: relative; display: inline-block; width: fit-content;
-            transition: color 0.2s;
-        }
+        .habit-name { font-size: 1.1rem; font-weight: 600; color: white; cursor: pointer; position: relative; display: inline-block; width: fit-content; transition: color 0.2s; }
         .habit-name:hover { color: var(--color-blue); }
         .habit-name::after { content: '›'; position: absolute; right: -15px; opacity: 0; transition: 0.2s; font-size: 1.2rem; line-height: 1rem; }
         .habit-name:hover::after { opacity: 1; transform: translateX(5px); }
-
+        
         .streak-badge { font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 12px; letter-spacing: 0.5px; }
         .streak-badge.tier-blue { color: var(--color-blue); background: rgba(10, 132, 255, 0.1); border: 1px solid rgba(10, 132, 255, 0.2); }
         .streak-badge.tier-bronze { color: var(--color-bronze); background: rgba(212, 140, 69, 0.1); border: 1px solid rgba(212, 140, 69, 0.3); }
         .streak-badge.tier-silver { color: var(--color-silver); background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); box-shadow: 0 0 15px rgba(255, 255, 255, 0.1); }
         .streak-badge.tier-gold { color: var(--color-gold); background: rgba(255, 215, 0, 0.1); border: 1px solid rgba(255, 215, 0, 0.4); box-shadow: 0 0 20px rgba(255, 215, 0, 0.2); }
-
         .delete-btn { background: transparent; border: none; color: var(--text-secondary); font-size: 1.2rem; cursor: pointer; opacity: 0; transition: 0.2s; }
         .habit-card:hover .delete-btn { opacity: 0.5; }
         .delete-btn:hover { opacity: 1 !important; color: #ff453a; }
@@ -101,56 +85,36 @@
         .day-box.completed.tier-silver { background: #bdc3c7; color: #000; box-shadow: 0 0 15px rgba(255, 255, 255, 0.4); }
         .day-box.completed.tier-gold { background: var(--color-gold); color: #000; box-shadow: 0 0 20px rgba(255, 215, 0, 0.6); }
         .day-box.today { border: 1px solid rgba(255,255,255,0.3); color: white; position: relative; }
-
         .stats-footer { margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; }
         .prev-month-stat { font-size: 0.75rem; color: var(--text-secondary); font-weight: 500; }
-        .prev-month-stat strong { color: white; }
-
-        /* --- MODALS (POP-UP) --- */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            z-index: 100; display: flex; justify-content: center; align-items: center;
-            opacity: 0; pointer-events: none; transition: opacity 0.3s;
-        }
+        
+        /* MODALS */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); z-index: 100; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
         .modal-overlay.active { opacity: 1; pointer-events: all; }
-
-        .modal-content {
-            background: #1c1c1e; border: 1px solid var(--glass-border);
-            width: 90%; max-width: 450px; padding: 30px; border-radius: 30px;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.6);
-            transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            display: flex; flex-direction: column; gap: 20px;
-        }
+        .modal-content { background: #1c1c1e; border: 1px solid var(--glass-border); width: 90%; max-width: 450px; padding: 30px; border-radius: 30px; box-shadow: 0 25px 50px rgba(0,0,0,0.6); transform: scale(0.9); transition: transform 0.3s; display: flex; flex-direction: column; gap: 20px; }
         .modal-overlay.active .modal-content { transform: scale(1); }
-
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .modal-title { font-size: 1.4rem; font-weight: 700; color: white; }
         .modal-close { background: rgba(255,255,255,0.1); border: none; color: white; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
-        .modal-close:hover { background: rgba(255,255,255,0.2); }
-
-        /* Styles spécifiques pour l'historique */
+        
+        /* HISTORY STYLES */
         .month-navigator { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 10px 20px; border-radius: 15px; }
         .nav-btn { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; padding: 0 10px; opacity: 0.7; }
-        .nav-btn:hover { opacity: 1; color: var(--color-blue); }
         .current-month-label { font-size: 1rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
-
         .modal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
         .modal-day { aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: rgba(255,255,255,0.03); color: #888; cursor: pointer; font-size: 0.9rem; }
         .modal-day.active { background: var(--color-blue); color: white; font-weight: bold; }
         .modal-day.empty { background: transparent; cursor: default; }
-        
-        /* Styles spécifiques pour les Settings */
-        .setting-row { display: flex; flex-direction: column; gap: 10px; }
-        .btn-action {
-            background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
-            color: white; padding: 15px; border-radius: 12px; cursor: pointer;
-            font-size: 0.95rem; font-weight: 500; text-align: left;
-            display: flex; align-items: center; gap: 10px; transition: 0.2s;
-        }
+
+        /* SETTINGS STYLES */
+        .setting-row { display: flex; flex-direction: column; gap: 15px; }
+        .btn-action { background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: white; padding: 15px; border-radius: 12px; cursor: pointer; font-size: 0.95rem; font-weight: 500; text-align: left; display: flex; align-items: center; gap: 10px; transition: 0.2s; }
         .btn-action:hover { background: rgba(255,255,255,0.1); border-color: white; }
-        .btn-action.danger { border-color: rgba(255, 69, 58, 0.3); color: #ff453a; }
-        .btn-action.danger:hover { background: rgba(255, 69, 58, 0.1); }
+        .btn-action.primary { background: var(--color-blue); border-color: var(--color-blue); color: white; justify-content: center; text-align: center; }
+        .btn-action.primary:hover { opacity: 0.9; }
+        .auth-section { border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; }
+        .login-input-group { display: flex; gap: 10px; margin-top: 10px; }
+        .user-email-display { font-size: 0.9rem; color: var(--color-green); margin-bottom: 10px; display: block; }
         
         .empty-state { grid-column: 1 / -1; text-align: center; color: var(--text-secondary); margin-top: 10vh; }
     </style>
@@ -159,10 +123,9 @@
 
 <header>
     <div class="header-top">
-        <h1>Habit OS</h1>
+        <h1>Habit OS <span id="statusDot" class="status-dot"></span></h1>
         <button class="settings-btn" onclick="openSettings()">⚙️</button>
     </div>
-    
     <button class="toggle-add-btn" id="toggleBtn" onclick="toggleInput()">+</button>
     <div class="add-wrapper" id="addWrapper">
         <input type="text" id="habitInput" placeholder="Nouvelle habitude...">
@@ -177,17 +140,14 @@
             <div class="modal-title" id="modalTitle">Habitude</div>
             <button class="modal-close" onclick="closeModal('historyModal')">×</button>
         </div>
-        
         <div class="month-navigator">
             <button class="nav-btn" onclick="changeModalMonth(-1)">‹</button>
             <span class="current-month-label" id="modalDateLabel">Mois</span>
             <button class="nav-btn" onclick="changeModalMonth(1)">›</button>
         </div>
-
         <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; color: #555; font-size: 0.7rem; margin-bottom: 10px;">
             <span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span>
         </div>
-        
         <div class="modal-grid" id="modalGrid"></div>
     </div>
 </div>
@@ -200,43 +160,148 @@
         </div>
         
         <div class="setting-row">
-            <p style="color: #888; font-size: 0.9rem; margin: 0;">Gestion des données</p>
-            
-            <button class="btn-action" onclick="exportData()">
-                📥 Sauvegarder mes données (Backup)
-            </button>
-            
-            <button class="btn-action" onclick="document.getElementById('importFile').click()">
-                📤 Restaurer une sauvegarde
-            </button>
-            <input type="file" id="importFile" style="display: none" onchange="importData(this)" accept=".json">
+            <div class="auth-section">
+                <p style="color: #fff; font-weight:600; margin: 0 0 5px 0;">Cloud Sync ☁️</p>
+                <div id="authContainer">
+                    <p style="color: #888; font-size: 0.85rem; margin: 0;">Entrez votre email pour synchroniser vos habitudes entre vos appareils.</p>
+                    <div class="login-input-group">
+                        <input type="email" id="userEmail" placeholder="votre@email.com">
+                        <button class="btn-action primary" style="width: auto; padding: 0 20px;" onclick="handleLogin()">Go</button>
+                    </div>
+                </div>
+                <div id="userInfo" style="display: none;">
+                    <span class="user-email-display" id="userEmailDisplay"></span>
+                    <button class="btn-action" onclick="handleLogout()">Se déconnecter</button>
+                    <p style="color: #888; font-size: 0.75rem; margin-top:5px;">Vos données sont synchronisées automatiquement.</p>
+                </div>
+            </div>
 
-            <button class="btn-action danger" onclick="resetAllData()">
-                🗑️ Tout effacer (Reset)
-            </button>
+            <div style="margin-top: 10px;">
+                <p style="color: #888; font-size: 0.8rem; margin: 0 0 10px 0;">Backup local</p>
+                <button class="btn-action" onclick="exportData()">📥 Sauvegarder fichier (.json)</button>
+            </div>
         </div>
-        
-        <div style="margin-top: 10px; font-size: 0.75rem; color: #555; text-align: center;">
-            Habit OS v1.0 • Offline Mode
-        </div>
+        <div style="margin-top: 10px; font-size: 0.75rem; color: #555; text-align: center;">Habit OS Cloud v2.0</div>
     </div>
 </div>
 
 <script>
+    // --- ⚠️ CONFIGURATION SUPABASE (REMPLIR ICI) ⚠️ ---
+    const SUPABASE_URL = 'https://ubvttoapdnqjnohtyuit.supabase.co'; 
+    const SUPABASE_ANON_KEY = 'sb_publishable_cGfs_90KymtuE0c9oXXSPA_hxuPHgon';
+
+    // Initialisation du client Supabase
+    const { createClient } = supabase;
+    const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // --- VARIABLES GLOBALES ---
     const today = new Date();
     const currentYear = today.getFullYear();
     const currentMonth = today.getMonth();
     const currentDay = today.getDate();
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-
     let modalYear = currentYear;
     let modalMonth = currentMonth;
     let currentHabitId = null; 
+    let currentUser = null; // Stocke l'utilisateur connecté
 
     let habits = JSON.parse(localStorage.getItem('myHabits')) || [];
 
-    // --- LOGIQUE METIER ---
-    function saveHabits() { localStorage.setItem('myHabits', JSON.stringify(habits)); render(); }
+    // --- INITIALISATION ---
+    initApp();
+
+    async function initApp() {
+        // Vérifie si l'utilisateur est déjà connecté
+        const { data: { session } } = await sb.auth.getSession();
+        if (session) {
+            currentUser = session.user;
+            updateUIForLogin();
+            await pullDataFromCloud(); // Charge les données du cloud
+        } else {
+            render(); // Mode hors ligne
+        }
+
+        // Écoute les changements d'auth (ex: clic sur lien email)
+        sb.auth.onAuthStateChange(async (_event, session) => {
+            if (session) {
+                currentUser = session.user;
+                updateUIForLogin();
+                await pullDataFromCloud();
+            } else {
+                currentUser = null;
+                updateUIForLogout();
+            }
+        });
+    }
+
+    // --- GESTION DE LA SYNC (CLOUD) ---
+    
+    // 1. Envoyer les données (Upsert)
+    async function pushDataToCloud() {
+        if (!currentUser) return; // Mode local uniquement
+        
+        const { error } = await sb
+            .from('user_data')
+            .upsert({ user_id: currentUser.id, habits: habits }, { onConflict: 'user_id' });
+            
+        if (error) console.error('Erreur Sync:', error);
+    }
+
+    // 2. Recevoir les données
+    async function pullDataFromCloud() {
+        if (!currentUser) return;
+
+        const { data, error } = await sb
+            .from('user_data')
+            .select('habits')
+            .eq('user_id', currentUser.id)
+            .single();
+
+        if (data && data.habits) {
+            // Si données distantes existent, on les prend
+            habits = data.habits;
+            localStorage.setItem('myHabits', JSON.stringify(habits)); // Sync locale aussi
+            render();
+        } else if (!error || error.code === 'PGRST116') {
+            // Si pas de données distantes (nouvel user), on envoie les données locales actuelles
+            await pushDataToCloud();
+        }
+    }
+
+    // --- AUTHENTIFICATION ---
+    async function handleLogin() {
+        const email = document.getElementById('userEmail').value;
+        if (!email) return alert('Email requis');
+        
+        const { error } = await sb.auth.signInWithOtp({ email: email });
+        if (error) alert('Erreur: ' + error.message);
+        else alert('Lien magique envoyé ! Vérifiez vos emails.');
+    }
+
+    async function handleLogout() {
+        await sb.auth.signOut();
+        window.location.reload();
+    }
+
+    function updateUIForLogin() {
+        document.getElementById('authContainer').style.display = 'none';
+        document.getElementById('userInfo').style.display = 'block';
+        document.getElementById('userEmailDisplay').textContent = `Connecté: ${currentUser.email}`;
+        document.getElementById('statusDot').classList.add('online');
+    }
+
+    function updateUIForLogout() {
+        document.getElementById('authContainer').style.display = 'block';
+        document.getElementById('userInfo').style.display = 'none';
+        document.getElementById('statusDot').classList.remove('online');
+    }
+
+    // --- LOGIQUE METIER (Modifiée pour Sync) ---
+    function saveHabits() {
+        localStorage.setItem('myHabits', JSON.stringify(habits)); // Sauvegarde Locale (Instantanée)
+        render();
+        pushDataToCloud(); // Sauvegarde Cloud (Async)
+    }
 
     function addHabit() {
         const name = document.getElementById('habitInput').value.trim();
@@ -252,12 +317,10 @@
         if(confirm('Arrêter cette habitude ?')) { habits = habits.filter(h => h.id !== id); saveHabits(); } 
     }
 
-    function getFullDateId(year, month, day) { return `${year}-${month}-${day}`; }
-
     function toggleDay(habitId, day, year = currentYear, month = currentMonth) {
         const habit = habits.find(h => h.id === habitId);
         if (habit) {
-            const dateId = getFullDateId(year, month, day);
+            const dateId = `${year}-${month}-${day}`;
             const index = habit.completions.indexOf(dateId);
             
             if (index > -1) habit.completions.splice(index, 1);
@@ -267,162 +330,12 @@
                     confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 }, colors: ['#0A84FF', '#ffffff'] });
                 }
             }
-            saveHabits();
+            saveHabits(); // Déclenche la sync
             if(document.getElementById('historyModal').classList.contains('active')) renderModalGrid();
         }
     }
 
-    // --- GESTION DES MODALS ---
-    function openModal(habitId) {
-        currentHabitId = habitId;
-        const habit = habits.find(h => h.id === habitId);
-        if(!habit) return;
-        document.getElementById('modalTitle').textContent = habit.name;
-        modalYear = currentYear; modalMonth = currentMonth;
-        renderModalGrid();
-        document.getElementById('historyModal').classList.add('active');
-    }
-
-    function openSettings() {
-        document.getElementById('settingsModal').classList.add('active');
-    }
-
-    function closeModal(modalId) {
-        document.getElementById(modalId).classList.remove('active');
-    }
-
-    // Fermeture au clic en dehors
-    window.onclick = function(event) {
-        if (event.target.classList.contains('modal-overlay')) {
-            event.target.classList.remove('active');
-        }
-    }
-
-    // --- HISTORIQUE ---
-    function changeModalMonth(step) {
-        modalMonth += step;
-        if (modalMonth > 11) { modalMonth = 0; modalYear++; }
-        else if (modalMonth < 0) { modalMonth = 11; modalYear--; }
-        renderModalGrid();
-    }
-
-    function renderModalGrid() {
-        const habit = habits.find(h => h.id === currentHabitId);
-        if(!habit) return;
-        const grid = document.getElementById('modalGrid');
-        grid.innerHTML = '';
-        
-        const dateObj = new Date(modalYear, modalMonth, 1);
-        document.getElementById('modalDateLabel').textContent = dateObj.toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
-
-        const daysInModalMonth = new Date(modalYear, modalMonth + 1, 0).getDate();
-        let firstDayIndex = new Date(modalYear, modalMonth, 1).getDay(); 
-        firstDayIndex = firstDayIndex === 0 ? 6 : firstDayIndex - 1; 
-
-        for(let i=0; i<firstDayIndex; i++) grid.appendChild(createDiv('modal-day empty'));
-
-        for(let i=1; i<=daysInModalMonth; i++) {
-            const dayBox = createDiv('modal-day', i);
-            const dateId = getFullDateId(modalYear, modalMonth, i);
-            if(habit.completions.includes(dateId)) dayBox.classList.add('active');
-            dayBox.onclick = () => toggleDay(habit.id, i, modalYear, modalMonth);
-            grid.appendChild(dayBox);
-        }
-    }
-
-    function createDiv(className, text = '') {
-        const d = document.createElement('div'); d.className = className; d.textContent = text; return d;
-    }
-
-    // --- SYSTEME DE SAUVEGARDE (BACKUP) ---
-    function exportData() {
-        const dataStr = JSON.stringify(habits, null, 2);
-        const blob = new Blob([dataStr], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `HabitOS_Backup_${new Date().toISOString().slice(0,10)}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-    }
-
-    function importData(input) {
-        const file = input.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const importedData = JSON.parse(e.target.result);
-                if (Array.isArray(importedData)) {
-                    habits = importedData;
-                    saveHabits();
-                    alert('Sauvegarde restaurée avec succès !');
-                    closeModal('settingsModal');
-                } else {
-                    alert('Format de fichier invalide.');
-                }
-            } catch (err) {
-                alert('Erreur lors de la lecture du fichier.');
-            }
-        };
-        reader.readAsText(file);
-    }
-
-    function resetAllData() {
-        if(confirm('ATTENTION : Cela va effacer toutes vos habitudes. Continuer ?')) {
-            habits = []; saveHabits(); closeModal('settingsModal');
-        }
-    }
-
-    // --- UI HELPERS ---
-    function toggleInput() {
-        document.getElementById('addWrapper').classList.toggle('open');
-        document.getElementById('toggleBtn').classList.toggle('active');
-        if (document.getElementById('addWrapper').classList.contains('open')) setTimeout(() => document.getElementById('habitInput').focus(), 100);
-    }
-
-    function calculateRealStreak(completions) {
-        if (!completions || completions.length === 0) return 0;
-        const dates = completions.map(str => {
-            const [y, m, d] = str.split('-').map(Number);
-            return new Date(y, m, d);
-        }).sort((a, b) => b - a);
-
-        let streak = 0;
-        let checkDate = new Date(currentYear, currentMonth, currentDay);
-        const isSameDay = (d1, d2) => d1.toDateString() === d2.toDateString();
-
-        if (dates.length > 0 && isSameDay(dates[0], checkDate)) { streak++; checkDate.setDate(checkDate.getDate() - 1); }
-        else { checkDate.setDate(checkDate.getDate() - 1); if (dates.length > 0 && !isSameDay(dates[0], checkDate)) return 0; }
-
-        for (let date of dates) {
-            if (streak === 1 && isSameDay(date, new Date(currentYear, currentMonth, currentDay))) continue;
-            if (isSameDay(date, checkDate)) { streak++; checkDate.setDate(checkDate.getDate() - 1); } else break;
-        }
-        return streak;
-    }
-
-    function getTierInfo(streak) {
-        if (streak >= 28) return { class: 'tier-gold', label: 'DISCIPLINÉ' };
-        if (streak >= 14) return { class: 'tier-silver', label: 'PRATIQUANT' };
-        if (streak >= 5)  return { class: 'tier-bronze', label: 'NOVICE' };
-        return { class: 'tier-blue', label: 'Streak' };
-    }
-
-    function getPrevMonthStats(completions) {
-        const prevDate = new Date(currentYear, currentMonth - 1, 1);
-        const pYear = prevDate.getFullYear();
-        const pMonth = prevDate.getMonth();
-        const pDays = new Date(pYear, pMonth + 1, 0).getDate();
-        const pName = prevDate.toLocaleString('fr-FR', { month: 'short' });
-
-        const count = completions.filter(d => {
-            const [y, m, day] = d.split('-').map(Number);
-            return y === pYear && m === pMonth;
-        }).length;
-        return { name: pName, count, total: pDays, percentage: Math.round((count / pDays) * 100) };
-    }
-
+    // --- RENDERING & UI (Reste identique à avant) ---
     function render() {
         const container = document.getElementById('habitsList');
         container.innerHTML = '';
@@ -435,43 +348,71 @@
 
             const card = document.createElement('div');
             card.className = 'habit-card';
-
             const streakHtml = streak > 1 ? `<div class="streak-badge ${tier.class}">🔥 ${streak} Jours • ${tier.label}</div>` : '';
 
             card.innerHTML = `
                 <div class="habit-header">
-                    <div class="habit-info">
-                        <span class="habit-name" onclick="openModal(${habit.id})">${habit.name}</span>
-                        ${streakHtml}
-                    </div>
+                    <div class="habit-info"><span class="habit-name" onclick="openModal(${habit.id})">${habit.name}</span>${streakHtml}</div>
                     <button class="delete-btn" onclick="deleteHabit(${habit.id}, event)">×</button>
                 </div>
                 <div class="month-grid" id="grid-${habit.id}"></div>
-                <div class="stats-footer">
-                    <div class="prev-month-stat">${prevStats.name.toUpperCase()} : <strong>${prevStats.count}/${prevStats.total}</strong> (${prevStats.percentage}%)</div>
-                </div>
+                <div class="stats-footer"><div class="prev-month-stat">${prevStats.name.toUpperCase()} : <strong>${prevStats.count}/${prevStats.total}</strong> (${prevStats.percentage}%)</div></div>
             `;
             container.appendChild(card);
-
             const grid = document.getElementById(`grid-${habit.id}`);
             for (let i = 1; i <= daysInMonth; i++) {
-                const dayBox = createDiv('day-box', i);
-                const dateToCheck = getFullDateId(currentYear, currentMonth, i);
-                
+                const dayBox = document.createElement('div'); dayBox.className = 'day-box'; dayBox.textContent = i;
+                const dateToCheck = `${currentYear}-${currentMonth}-${i}`;
                 if (i === currentDay) dayBox.classList.add('today');
                 if (habit.completions.includes(dateToCheck)) {
                     dayBox.classList.add('completed');
                     dayBox.classList.add(streak > 1 ? tier.class : 'tier-blue');
                 }
-                
                 dayBox.onclick = () => toggleDay(habit.id, i);
                 grid.appendChild(dayBox);
             }
         });
     }
 
-    render();
-    document.getElementById('habitInput').addEventListener('keypress', function (e) { if (e.key === 'Enter') addHabit(); });
+    // --- HELPERS (Calculs, Modals...) ---
+    function calculateRealStreak(c) {
+        if (!c || c.length === 0) return 0;
+        const d = c.map(s => { const [y, m, day] = s.split('-').map(Number); return new Date(y, m, day); }).sort((a, b) => b - a);
+        let s = 0, check = new Date(currentYear, currentMonth, currentDay);
+        const same = (a, b) => a.toDateString() === b.toDateString();
+        if (d.length > 0 && same(d[0], check)) { s++; check.setDate(check.getDate() - 1); }
+        else { check.setDate(check.getDate() - 1); if (d.length > 0 && !same(d[0], check)) return 0; }
+        for (let date of d) { if (s === 1 && same(date, new Date(currentYear, currentMonth, currentDay))) continue; if (same(date, check)) { s++; check.setDate(check.getDate() - 1); } else break; }
+        return s;
+    }
+    function getTierInfo(s) { if (s >= 28) return {class:'tier-gold',label:'LÉGENDAIRE'}; if (s >= 14) return {class:'tier-silver',label:'ARGENT'}; if (s >= 5) return {class:'tier-bronze',label:'BRONZE'}; return {class:'tier-blue',label:''}; }
+    function getPrevMonthStats(c) {
+        const d = new Date(currentYear, currentMonth - 1, 1);
+        const total = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+        const count = c.filter(x => { const [y, m] = x.split('-').map(Number); return y === d.getFullYear() && m === d.getMonth(); }).length;
+        return { name: d.toLocaleString('fr-FR',{month:'short'}), count, total, percentage: Math.round((count/total)*100) };
+    }
+    function toggleInput() { document.getElementById('addWrapper').classList.toggle('open'); document.getElementById('toggleBtn').classList.toggle('active'); if(document.getElementById('addWrapper').classList.contains('open')) setTimeout(()=>document.getElementById('habitInput').focus(),100); }
+    function openSettings() { document.getElementById('settingsModal').classList.add('active'); }
+    function openModal(id) { currentHabitId = id; const h = habits.find(x => x.id === id); if(!h)return; document.getElementById('modalTitle').textContent = h.name; modalYear=currentYear; modalMonth=currentMonth; renderModalGrid(); document.getElementById('historyModal').classList.add('active'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+    window.onclick = e => { if(e.target.classList.contains('modal-overlay')) e.target.classList.remove('active'); };
+    function changeModalMonth(step) { modalMonth += step; if (modalMonth > 11) { modalMonth = 0; modalYear++; } else if (modalMonth < 0) { modalMonth = 11; modalYear--; } renderModalGrid(); }
+    function renderModalGrid() {
+        const h = habits.find(x => x.id === currentHabitId); if(!h) return;
+        const grid = document.getElementById('modalGrid'); grid.innerHTML = '';
+        document.getElementById('modalDateLabel').textContent = new Date(modalYear, modalMonth, 1).toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
+        let first = new Date(modalYear, modalMonth, 1).getDay(); first = first === 0 ? 6 : first - 1;
+        for(let i=0; i<first; i++) grid.appendChild(Object.assign(document.createElement('div'),{className:'modal-day empty'}));
+        for(let i=1; i<=new Date(modalYear, modalMonth+1, 0).getDate(); i++) {
+            const d = document.createElement('div'); d.className = 'modal-day'; d.textContent = i;
+            if(h.completions.includes(`${modalYear}-${modalMonth}-${i}`)) d.classList.add('active');
+            d.onclick = () => toggleDay(h.id, i, modalYear, modalMonth);
+            grid.appendChild(d);
+        }
+    }
+    function exportData() { const blob = new Blob([JSON.stringify(habits, null, 2)], { type: "application/json" }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `HabitOS_Backup_${new Date().toISOString().slice(0,10)}.json`; a.click(); }
+    document.getElementById('habitInput').addEventListener('keypress', e => { if (e.key === 'Enter') addHabit(); });
 </script>
 
 </body>
