@@ -416,6 +416,28 @@
     }
     function exportData() { const blob = new Blob([JSON.stringify(habits, null, 2)], { type: "application/json" }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `HabitOS_Backup_${new Date().toISOString().slice(0,10)}.json`; a.click(); }
     document.getElementById('habitInput').addEventListener('keypress', e => { if (e.key === 'Enter') addHabit(); });
+    // --- GESTION INTELLIGENTE DU RÉSEAU (OFFLINE/ONLINE) ---
+    
+    // 1. Quand internet revient
+    window.addEventListener('online', async () => {
+        console.log("Connexion rétablie ! Synchronisation...");
+        document.getElementById('statusDot').classList.add('online'); // Point vert
+        await pushDataToCloud(); // On envoie tout ce qui était en attente
+        alert('Connexion rétablie : Données synchronisées ! ☁️');
+    });
+
+    // 2. Quand internet coupe
+    window.addEventListener('offline', () => {
+        console.log("Connexion perdue. Passage en mode local.");
+        document.getElementById('statusDot').classList.remove('online'); // Point rouge/gris
+        document.getElementById('statusDot').style.backgroundColor = '#ff453a'; // Rouge
+    });
+
+    // 3. Vérification au démarrage
+    if (!navigator.onLine) {
+        document.getElementById('statusDot').classList.remove('online');
+        document.getElementById('statusDot').style.backgroundColor = '#ff453a';
+    }
 </script>
 
 </body>
