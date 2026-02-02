@@ -279,8 +279,11 @@
     }
 
     async function handleLogout() {
-        await sb.auth.signOut();
-        window.location.reload();
+    await sb.auth.signOut();
+    localStorage.removeItem('myHabits'); // <--- On vide la mémoire locale
+    habits = []; // On vide la variable
+    render(); // On nettoie l'écran
+    window.location.reload(); // On recharge proprement
     }
 
     function updateUIForLogin() {
