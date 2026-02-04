@@ -9,47 +9,128 @@
     <title>Habit OS</title>
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icon.png">
+    
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
         :root {
+            /* --- DÉFAUT: DEEP SPACE (Neutre) --- */
             --bg-gradient: radial-gradient(circle at center, #1c1c1e 0%, #000000 100%);
-            --glass-bg: rgba(255, 255, 255, 0.04);
-            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
             --text-primary: #ffffff;
             --text-secondary: #86868b;
+            --accent-color: #0A84FF; /* Bleu iOS */
+            --day-box-bg: rgba(255, 255, 255, 0.05);
+            
             --font-stack: "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif;
-            --color-blue: #0A84FF;
+            
+            /* Tiers Colors Standard */
+            --color-blue: var(--accent-color);
             --color-bronze: #D48C45;
             --color-silver: #E0E0E0;
             --color-gold: #FFD700;
             --color-green: #30d158;
         }
 
-        body {
-            background: var(--bg-gradient); color: var(--text-primary); font-family: var(--font-stack);
-            min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; overflow-x: hidden; overscroll-behavior-y: none;
+        /* --- THEME: LIGHT (GLACIER) --- */
+        [data-theme="light"] {
+            --bg-gradient: linear-gradient(to top, #cfd9df 0%, #e2ebf0 100%);
+            --glass-bg: rgba(255, 255, 255, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.8);
+            --text-primary: #2c3e50;
+            --text-secondary: #5d6d7e;
+            --accent-color: #007aff;
+            --day-box-bg: rgba(0, 50, 100, 0.05);
+            --color-silver: #7f8c8d;
         }
 
-        /* HEADER */
+        /* --- NOUVEAUX THÈMES (Palette Photo) --- */
+
+        /* 1. NECTARINE (#D7897F) - Ambiance Terre Cuite */
+        [data-theme="nectarine"] {
+            /* Dégradé du sombre vers le Nectarine */
+            --bg-gradient: linear-gradient(160deg, #4a2c2a 0%, #D7897F 100%);
+            --glass-bg: rgba(215, 137, 127, 0.15);
+            --glass-border: rgba(215, 137, 127, 0.3);
+            --text-primary: #ffffff;
+            --text-secondary: #ffdad5;
+            --accent-color: #D7897F; 
+            --day-box-bg: rgba(255, 255, 255, 0.1);
+        }
+
+        /* 2. PÊCHE (#F9B95C) - Ambiance Solaire */
+        [data-theme="peche"] {
+            --bg-gradient: linear-gradient(160deg, #5e3f10 0%, #F9B95C 100%);
+            --glass-bg: rgba(249, 185, 92, 0.15);
+            --glass-border: rgba(249, 185, 92, 0.3);
+            --text-primary: #ffffff;
+            --text-secondary: #ffeec9;
+            --accent-color: #F9B95C;
+            --day-box-bg: rgba(255, 255, 255, 0.1);
+        }
+
+        /* 3. MENTHE (#96C7B3) - Ambiance Fraicheur */
+        [data-theme="menthe"] {
+            --bg-gradient: linear-gradient(160deg, #1f3d32 0%, #96C7B3 100%);
+            --glass-bg: rgba(150, 199, 179, 0.15);
+            --glass-border: rgba(150, 199, 179, 0.3);
+            --text-primary: #ffffff;
+            --text-secondary: #d6f2e6;
+            --accent-color: #96C7B3;
+            --day-box-bg: rgba(255, 255, 255, 0.1);
+        }
+
+        /* 4. LAGUNE (#6398A9) - Ambiance Océan */
+        [data-theme="lagune"] {
+            --bg-gradient: linear-gradient(160deg, #182e36 0%, #6398A9 100%);
+            --glass-bg: rgba(99, 152, 169, 0.15);
+            --glass-border: rgba(99, 152, 169, 0.3);
+            --text-primary: #ffffff;
+            --text-secondary: #cceeff;
+            --accent-color: #6398A9;
+            --day-box-bg: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            background: var(--bg-gradient);
+            transition: background 0.5s ease, color 0.5s ease;
+            background-size: cover; background-attachment: fixed;
+            color: var(--text-primary); font-family: var(--font-stack);
+            min-height: 100vh; margin: 0; padding: 20px;
+            box-sizing: border-box; display: flex; flex-direction: column; overflow-x: hidden;
+            overscroll-behavior-y: none; 
+        }
+
+        /* HEADER & UI */
         header { width: 100%; margin-bottom: 30px; display: flex; flex-direction: column; align-items: center; position: relative; z-index: 10; }
         .header-top { display: flex; align-items: center; justify-content: center; width: 100%; position: relative; margin-bottom: 20px; }
         h1 { font-weight: 700; text-transform: uppercase; letter-spacing: 3px; font-size: 0.8rem; color: var(--text-secondary); margin: 0; opacity: 0.6; }
-
-        /* Indicateur de statut (Connecté/Déconnecté) */
+        
         .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #ff453a; margin-left: 8px; box-shadow: 0 0 5px rgba(255,69,58,0.5); transition: 0.3s; }
         .status-dot.online { background: var(--color-green); box-shadow: 0 0 5px rgba(48, 209, 88, 0.5); }
 
         .settings-btn { position: absolute; right: 0; top: -5px; background: transparent; border: none; color: var(--text-secondary); font-size: 1.2rem; cursor: pointer; transition: 0.3s; }
-        .settings-btn:hover { color: white; transform: rotate(90deg); }
+        .settings-btn:hover { color: var(--text-primary); transform: rotate(90deg); }
 
-        .toggle-add-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: white; width: 36px; height: 36px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; }
-        .toggle-add-btn:hover { background: white; color: black; transform: scale(1.1); }
+        .toggle-add-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: var(--text-primary); width: 36px; height: 36px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; }
+        .toggle-add-btn:hover { background: var(--accent-color); border-color: var(--accent-color); color: white; transform: scale(1.1); }
         .toggle-add-btn.active { transform: rotate(135deg); background: #ff453a; border-color: #ff453a; }
+
         .add-wrapper { position: absolute; top: 50px; width: 100%; display: flex; justify-content: center; opacity: 0; pointer-events: none; transform: translateY(-10px) scale(0.95); transition: all 0.3s; }
         .add-wrapper.open { opacity: 1; pointer-events: all; transform: translateY(0) scale(1); }
-        input[type="text"], input[type="email"] { background: rgba(30, 30, 30, 0.9); border: 1px solid rgba(255,255,255,0.2); padding: 12px 24px; border-radius: 30px; color: white; font-size: 1rem; width: 100%; max-width: 350px; outline: none; backdrop-filter: blur(20px); box-shadow: 0 20px 50px rgba(0,0,0,0.6); }
+
+        input[type="text"], input[type="email"] { 
+            background: var(--glass-bg); 
+            border: 1px solid var(--glass-border); 
+            padding: 12px 24px; border-radius: 30px; 
+            color: var(--text-primary); 
+            font-size: 1rem; width: 100%; max-width: 350px; outline: none; backdrop-filter: blur(20px); box-shadow: 0 20px 50px rgba(0,0,0,0.1); 
+            transition: 0.3s;
+        }
+        input::placeholder { color: var(--text-secondary); opacity: 0.7; }
+        input:focus { border-color: var(--accent-color); }
 
         /* GRID */
         .habits-container { width: 100%; max-width: 1600px; margin: 0 auto; display: grid; gap: 20px; padding-bottom: 40px; grid-template-columns: 1fr; align-content: start; }
@@ -58,63 +139,105 @@
         @media (min-width: 1400px) { .habits-container { grid-template-columns: repeat(4, 1fr); } }
 
         /* CARDS */
-        .habit-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 24px; padding: 24px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2); display: flex; flex-direction: column; width: 100%; box-sizing: border-box; transition: transform 0.3s ease, border-color 0.3s; position: relative; }
-        .habit-card:hover { transform: translateY(-4px); border-color: rgba(255,255,255,0.15); }
+        .habit-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 24px; padding: 24px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1); display: flex; flex-direction: column; width: 100%; box-sizing: border-box; transition: transform 0.3s ease, border-color 0.3s; position: relative; }
+        .habit-card:hover { transform: translateY(-4px); border-color: var(--accent-color); }
+
         .habit-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; min-height: 30px; }
         .habit-info { display: flex; flex-direction: column; gap: 6px; }
-        .habit-name { font-size: 1.1rem; font-weight: 600; color: white; cursor: pointer; position: relative; display: inline-block; width: fit-content; transition: color 0.2s; }
-        .habit-name:hover { color: var(--color-blue); }
+        
+        .habit-name { 
+            font-size: 1.1rem; font-weight: 600; color: var(--text-primary); 
+            cursor: pointer; position: relative; display: inline-block; width: fit-content;
+            transition: color 0.2s;
+        }
+        .habit-name:hover { color: var(--accent-color); }
         .habit-name::after { content: '›'; position: absolute; right: -15px; opacity: 0; transition: 0.2s; font-size: 1.2rem; line-height: 1rem; }
         .habit-name:hover::after { opacity: 1; transform: translateX(5px); }
-        
+
         .streak-badge { font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 12px; letter-spacing: 0.5px; }
         .streak-badge.tier-blue { color: var(--color-blue); background: rgba(10, 132, 255, 0.1); border: 1px solid rgba(10, 132, 255, 0.2); }
         .streak-badge.tier-bronze { color: var(--color-bronze); background: rgba(212, 140, 69, 0.1); border: 1px solid rgba(212, 140, 69, 0.3); }
         .streak-badge.tier-silver { color: var(--color-silver); background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); box-shadow: 0 0 15px rgba(255, 255, 255, 0.1); }
         .streak-badge.tier-gold { color: var(--color-gold); background: rgba(255, 215, 0, 0.1); border: 1px solid rgba(255, 215, 0, 0.4); box-shadow: 0 0 20px rgba(255, 215, 0, 0.2); }
+        
         .delete-btn { background: transparent; border: none; color: var(--text-secondary); font-size: 1.2rem; cursor: pointer; opacity: 0; transition: 0.2s; }
         .habit-card:hover .delete-btn { opacity: 0.5; }
         .delete-btn:hover { opacity: 1 !important; color: #ff453a; }
 
         .month-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(28px, 1fr)); gap: 6px; width: 100%; }
-        .day-box { aspect-ratio: 1/1; background: rgba(255, 255, 255, 0.05); border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #666; transition: all 0.2s; }
-        .day-box:hover { background: rgba(255, 255, 255, 0.2); color: white; }
+        .day-box { aspect-ratio: 1/1; background: var(--day-box-bg); border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: var(--text-secondary); transition: all 0.2s; }
+        .day-box:hover { background: var(--glass-border); color: var(--text-primary); }
         .day-box.completed { color: white; font-weight: 700; transform: scale(1.05); }
-        .day-box.completed.tier-blue { background: var(--color-blue); box-shadow: 0 0 10px rgba(10, 132, 255, 0.4); }
-        .day-box.completed.tier-bronze { background: var(--color-bronze); box-shadow: 0 0 10px rgba(212, 140, 69, 0.5); }
-        .day-box.completed.tier-silver { background: #bdc3c7; color: #000; box-shadow: 0 0 15px rgba(255, 255, 255, 0.4); }
+        
+        .day-box.completed.tier-blue { background: var(--color-blue); box-shadow: 0 0 10px var(--color-blue); }
+        .day-box.completed.tier-bronze { background: var(--color-bronze); box-shadow: 0 0 10px var(--color-bronze); }
+        .day-box.completed.tier-silver { background: var(--color-silver); color: #000; box-shadow: 0 0 15px rgba(255, 255, 255, 0.4); }
         .day-box.completed.tier-gold { background: var(--color-gold); color: #000; box-shadow: 0 0 20px rgba(255, 215, 0, 0.6); }
-        .day-box.today { border: 1px solid rgba(255,255,255,0.3); color: white; position: relative; }
-        .stats-footer { margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; }
+        .day-box.today { border: 1px solid var(--text-primary); color: var(--text-primary); position: relative; }
+
+        .stats-footer { margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; }
         .prev-month-stat { font-size: 0.75rem; color: var(--text-secondary); font-weight: 500; }
-        
+        .prev-month-stat strong { color: var(--text-primary); }
+
         /* MODALS */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); z-index: 100; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            z-index: 100; display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
         .modal-overlay.active { opacity: 1; pointer-events: all; }
-        .modal-content { background: #1c1c1e; border: 1px solid var(--glass-border); width: 90%; max-width: 450px; padding: 30px; border-radius: 30px; box-shadow: 0 25px 50px rgba(0,0,0,0.6); transform: scale(0.9); transition: transform 0.3s; display: flex; flex-direction: column; gap: 20px; }
+
+        .modal-content {
+            background: var(--bg-gradient); 
+            border: 1px solid var(--glass-border);
+            width: 90%; max-width: 450px; padding: 30px; border-radius: 30px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+            transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex; flex-direction: column; gap: 20px;
+        }
         .modal-overlay.active .modal-content { transform: scale(1); }
+
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .modal-title { font-size: 1.4rem; font-weight: 700; color: white; }
-        .modal-close { background: rgba(255,255,255,0.1); border: none; color: white; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
-        
+        .modal-title { font-size: 1.4rem; font-weight: 700; color: var(--text-primary); }
+        .modal-close { background: var(--glass-bg); border: none; color: var(--text-primary); width: 30px; height: 30px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+        .modal-close:hover { background: var(--glass-border); }
+
         /* HISTORY STYLES */
-        .month-navigator { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 10px 20px; border-radius: 15px; }
-        .nav-btn { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; padding: 0 10px; opacity: 0.7; }
-        .current-month-label { font-size: 1rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+        .month-navigator { display: flex; justify-content: space-between; align-items: center; background: var(--glass-bg); padding: 10px 20px; border-radius: 15px; }
+        .nav-btn { background: none; border: none; color: var(--text-primary); font-size: 1.5rem; cursor: pointer; padding: 0 10px; opacity: 0.7; }
+        .nav-btn:hover { opacity: 1; color: var(--accent-color); }
+        .current-month-label { font-size: 1rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--text-primary); }
         .modal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
-        .modal-day { aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: rgba(255,255,255,0.03); color: #888; cursor: pointer; font-size: 0.9rem; }
-        .modal-day.active { background: var(--color-blue); color: white; font-weight: bold; }
+        .modal-day { aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: var(--day-box-bg); color: var(--text-secondary); cursor: pointer; font-size: 0.9rem; }
+        .modal-day.active { background: var(--accent-color); color: white; font-weight: bold; }
         .modal-day.empty { background: transparent; cursor: default; }
 
         /* SETTINGS STYLES */
         .setting-row { display: flex; flex-direction: column; gap: 15px; }
-        .btn-action { background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: white; padding: 15px; border-radius: 12px; cursor: pointer; font-size: 0.95rem; font-weight: 500; text-align: left; display: flex; align-items: center; gap: 10px; transition: 0.2s; }
-        .btn-action:hover { background: rgba(255,255,255,0.1); border-color: white; }
-        .btn-action.primary { background: var(--color-blue); border-color: var(--color-blue); color: white; justify-content: center; text-align: center; }
+        .btn-action {
+            background: var(--glass-bg); border: 1px solid var(--glass-border);
+            color: var(--text-primary); padding: 15px; border-radius: 12px; cursor: pointer;
+            font-size: 0.95rem; font-weight: 500; text-align: left;
+            display: flex; align-items: center; gap: 10px; transition: 0.2s;
+        }
+        .btn-action:hover { background: var(--glass-border); border-color: var(--accent-color); }
+        .btn-action.primary { background: var(--accent-color); border-color: var(--accent-color); color: white; justify-content: center; text-align: center; }
         .btn-action.primary:hover { opacity: 0.9; }
-        .auth-section { border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; }
+        
+        .auth-section { border-top: 1px solid var(--glass-border); padding-top: 15px; }
         .login-input-group { display: flex; gap: 10px; margin-top: 10px; }
-        .user-email-display { font-size: 0.9rem; color: var(--color-green); margin-bottom: 10px; display: block; }
+        .user-email-display { font-size: 0.9rem; color: var(--accent-color); margin-bottom: 10px; display: block; }
+        
+        /* STYLE SELECTEUR THEME */
+        .theme-selector-label { color: var(--text-secondary); font-size: 0.9rem; margin: 0 0 10px 0; }
+        .theme-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 20px; }
+        .theme-btn {
+            aspect-ratio: 2.5/1; border-radius: 12px; border: 2px solid var(--glass-border); cursor: pointer; transition: 0.3s;
+            display: flex; align-items: center; justify-content: center; font-size: 0.8rem; color: white; font-weight: 600; text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+        }
+        .theme-btn:hover { transform: scale(1.02); border-color: var(--text-primary); z-index: 5; }
+        .theme-btn.light-text { color: #333; text-shadow: none; }
         
         .empty-state { grid-column: 1 / -1; text-align: center; color: var(--text-secondary); margin-top: 10vh; }
     </style>
@@ -126,6 +249,7 @@
         <h1>Habit OS <span id="statusDot" class="status-dot"></span></h1>
         <button class="settings-btn" onclick="openSettings()">⚙️</button>
     </div>
+    
     <button class="toggle-add-btn" id="toggleBtn" onclick="toggleInput()">+</button>
     <div class="add-wrapper" id="addWrapper">
         <input type="text" id="habitInput" placeholder="Nouvelle habitude...">
@@ -140,14 +264,17 @@
             <div class="modal-title" id="modalTitle">Habitude</div>
             <button class="modal-close" onclick="closeModal('historyModal')">×</button>
         </div>
+        
         <div class="month-navigator">
             <button class="nav-btn" onclick="changeModalMonth(-1)">‹</button>
             <span class="current-month-label" id="modalDateLabel">Mois</span>
             <button class="nav-btn" onclick="changeModalMonth(1)">›</button>
         </div>
-        <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; color: #555; font-size: 0.7rem; margin-bottom: 10px;">
+
+        <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; color: var(--text-secondary); font-size: 0.7rem; margin-bottom: 10px;">
             <span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span>
         </div>
+        
         <div class="modal-grid" id="modalGrid"></div>
     </div>
 </div>
@@ -160,10 +287,24 @@
         </div>
         
         <div class="setting-row">
+            
+            <div>
+                <p class="theme-selector-label">Apparence</p>
+                <div class="theme-grid">
+                    <div class="theme-btn" style="background: radial-gradient(circle at center, #1c1c1e 0%, #000000 100%);" onclick="setTheme('default')">Dark Space</div>
+                    <div class="theme-btn light-text" style="background: linear-gradient(to top, #cfd9df 0%, #e2ebf0 100%);" onclick="setTheme('light')">Light</div>
+                    
+                    <div class="theme-btn" style="background: linear-gradient(135deg, #4a2c2a 0%, #D7897F 100%);" onclick="setTheme('nectarine')">Nectarine</div>
+                    <div class="theme-btn" style="background: linear-gradient(135deg, #5e3f10 0%, #F9B95C 100%);" onclick="setTheme('peche')">Pêche</div>
+                    <div class="theme-btn" style="background: linear-gradient(135deg, #1f3d32 0%, #96C7B3 100%);" onclick="setTheme('menthe')">Menthe</div>
+                    <div class="theme-btn" style="background: linear-gradient(135deg, #182e36 0%, #6398A9 100%);" onclick="setTheme('lagune')">Lagune</div>
+                </div>
+            </div>
+
             <div class="auth-section">
-                <p style="color: #fff; font-weight:600; margin: 0 0 5px 0;">Cloud Sync ☁️</p>
+                <p style="color: var(--text-primary); font-weight:600; margin: 0 0 5px 0;">Cloud Sync ☁️</p>
                 <div id="authContainer">
-                    <p style="color: #888; font-size: 0.85rem; margin: 0;">Entrez votre email pour synchroniser vos habitudes entre vos appareils.</p>
+                    <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0;">Email pour synchroniser :</p>
                     <div class="login-input-group">
                         <input type="email" id="userEmail" placeholder="votre@email.com">
                         <button class="btn-action primary" style="width: auto; padding: 0 20px;" onclick="handleLogin()">Go</button>
@@ -172,56 +313,83 @@
                 <div id="userInfo" style="display: none;">
                     <span class="user-email-display" id="userEmailDisplay"></span>
                     <button class="btn-action" onclick="handleLogout()">Se déconnecter</button>
-                    <p style="color: #888; font-size: 0.75rem; margin-top:5px;">Vos données sont synchronisées automatiquement.</p>
                 </div>
             </div>
 
             <div style="margin-top: 10px;">
-                <p style="color: #888; font-size: 0.8rem; margin: 0 0 10px 0;">Backup local</p>
-                <button class="btn-action" onclick="exportData()">📥 Sauvegarder fichier (.json)</button>
+                <button class="btn-action" onclick="exportData()">📥 Sauvegarde locale (.json)</button>
             </div>
         </div>
-        <div style="margin-top: 10px; font-size: 0.75rem; color: #555; text-align: center;">Habit OS Cloud v2.0</div>
+        
+        <div style="margin-top: 10px; font-size: 0.75rem; color: var(--text-secondary); text-align: center;">
+            Habit OS v4.0 (Palette)
+        </div>
     </div>
 </div>
 
 <script>
-    // --- ⚠️ CONFIGURATION SUPABASE (REMPLIR ICI) ⚠️ ---
+    // --- ⚠️ CONFIGURATION SUPABASE ⚠️ ---
     const SUPABASE_URL = 'https://ubvttoapdnqjnohtyuit.supabase.co'; 
     const SUPABASE_ANON_KEY = 'sb_publishable_cGfs_90KymtuE0c9oXXSPA_hxuPHgon';
 
-    // Initialisation du client Supabase
     const { createClient } = supabase;
     const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // --- VARIABLES GLOBALES ---
+    // --- VARIABLES ---
     const today = new Date();
     const currentYear = today.getFullYear();
     const currentMonth = today.getMonth();
     const currentDay = today.getDate();
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
     let modalYear = currentYear;
     let modalMonth = currentMonth;
     let currentHabitId = null; 
-    let currentUser = null; // Stocke l'utilisateur connecté
+    let currentUser = null; 
 
     let habits = JSON.parse(localStorage.getItem('myHabits')) || [];
 
-    // --- INITIALISATION ---
+    // --- THEME ENGINE ---
+    function loadTheme() {
+        const savedTheme = localStorage.getItem('habitOS_theme');
+        if (savedTheme && savedTheme !== 'default') {
+            document.body.setAttribute('data-theme', savedTheme);
+        }
+    }
+
+    function setTheme(themeName) {
+        if (themeName === 'default') {
+            document.body.removeAttribute('data-theme');
+        } else {
+            document.body.setAttribute('data-theme', themeName);
+        }
+        localStorage.setItem('habitOS_theme', themeName);
+        
+        // Confettis aux couleurs du thème
+        let colors = [];
+        if(themeName === 'nectarine') colors = ['#D7897F', '#ffffff'];
+        else if(themeName === 'peche') colors = ['#F9B95C', '#ffffff'];
+        else if(themeName === 'menthe') colors = ['#96C7B3', '#ffffff'];
+        else if(themeName === 'lagune') colors = ['#6398A9', '#ffffff'];
+        
+        if(colors.length > 0) confetti({ particleCount: 40, spread: 70, colors: colors });
+        else confetti({ particleCount: 40, spread: 60, origin: { y: 0.5 } });
+    }
+
+    // --- INIT ---
+    loadTheme(); 
     initApp();
 
     async function initApp() {
-        // Vérifie si l'utilisateur est déjà connecté
         const { data: { session } } = await sb.auth.getSession();
         if (session) {
             currentUser = session.user;
             updateUIForLogin();
-            await pullDataFromCloud(); // Charge les données du cloud
+            await pullDataFromCloud();
         } else {
-            render(); // Mode hors ligne
+            render();
         }
 
-        // Écoute les changements d'auth (ex: clic sur lien email)
         sb.auth.onAuthStateChange(async (_event, session) => {
             if (session) {
                 currentUser = session.user;
@@ -234,210 +402,90 @@
         });
     }
 
-    // --- GESTION DE LA SYNC (CLOUD) ---
-    
-    // 1. Envoyer les données (Upsert)
+    // --- CLOUD SYNC ---
     async function pushDataToCloud() {
-        if (!currentUser) return; // Mode local uniquement
-        
-        const { error } = await sb
-            .from('user_data')
-            .upsert({ user_id: currentUser.id, habits: habits }, { onConflict: 'user_id' });
-            
+        if (!currentUser) return;
+        const { error } = await sb.from('user_data').upsert({ user_id: currentUser.id, habits: habits }, { onConflict: 'user_id' });
         if (error) console.error('Erreur Sync:', error);
     }
-
-    // 2. Recevoir les données
     async function pullDataFromCloud() {
         if (!currentUser) return;
-
-        const { data, error } = await sb
-            .from('user_data')
-            .select('habits')
-            .eq('user_id', currentUser.id)
-            .single();
-
+        const { data, error } = await sb.from('user_data').select('habits').eq('user_id', currentUser.id).single();
         if (data && data.habits) {
-            // Si données distantes existent, on les prend
-            habits = data.habits;
-            localStorage.setItem('myHabits', JSON.stringify(habits)); // Sync locale aussi
-            render();
-        } else if (!error || error.code === 'PGRST116') {
-            // Si pas de données distantes (nouvel user), on envoie les données locales actuelles
-            await pushDataToCloud();
-        }
+            habits = data.habits; localStorage.setItem('myHabits', JSON.stringify(habits)); render();
+        } else if (!error || error.code === 'PGRST116') { await pushDataToCloud(); }
     }
 
-    // --- AUTHENTIFICATION ---
+    // --- AUTH ---
     async function handleLogin() {
         const email = document.getElementById('userEmail').value;
         if (!email) return alert('Email requis');
-        
         const { error } = await sb.auth.signInWithOtp({ email: email });
-        if (error) alert('Erreur: ' + error.message);
-        else alert('Lien magique envoyé ! Vérifiez vos emails.');
+        if (error) alert('Erreur: ' + error.message); else alert('Lien magique envoyé !');
     }
-
     async function handleLogout() {
-    await sb.auth.signOut();
-    localStorage.removeItem('myHabits'); // <--- On vide la mémoire locale
-    habits = []; // On vide la variable
-    render(); // On nettoie l'écran
-    window.location.reload(); // On recharge proprement
+        await sb.auth.signOut(); localStorage.removeItem('myHabits'); habits = []; render(); window.location.reload();
     }
+    function updateUIForLogin() { document.getElementById('authContainer').style.display = 'none'; document.getElementById('userInfo').style.display = 'block'; document.getElementById('userEmailDisplay').textContent = `Connecté: ${currentUser.email}`; document.getElementById('statusDot').classList.add('online'); }
+    function updateUIForLogout() { document.getElementById('authContainer').style.display = 'block'; document.getElementById('userInfo').style.display = 'none'; document.getElementById('statusDot').classList.remove('online'); }
 
-    function updateUIForLogin() {
-        document.getElementById('authContainer').style.display = 'none';
-        document.getElementById('userInfo').style.display = 'block';
-        document.getElementById('userEmailDisplay').textContent = `Connecté: ${currentUser.email}`;
-        document.getElementById('statusDot').classList.add('online');
-    }
-
-    function updateUIForLogout() {
-        document.getElementById('authContainer').style.display = 'block';
-        document.getElementById('userInfo').style.display = 'none';
-        document.getElementById('statusDot').classList.remove('online');
-    }
-
-    // --- LOGIQUE METIER (Modifiée pour Sync) ---
-    function saveHabits() {
-        localStorage.setItem('myHabits', JSON.stringify(habits)); // Sauvegarde Locale (Instantanée)
-        render();
-        pushDataToCloud(); // Sauvegarde Cloud (Async)
-    }
-
+    // --- LOGIQUE ---
+    function saveHabits() { localStorage.setItem('myHabits', JSON.stringify(habits)); render(); pushDataToCloud(); }
     function addHabit() {
         const name = document.getElementById('habitInput').value.trim();
-        if (name) {
-            habits.push({ id: Date.now(), name: name, completions: [] });
-            document.getElementById('habitInput').value = '';
-            saveHabits(); toggleInput();
-        }
+        if (name) { habits.push({ id: Date.now(), name: name, completions: [] }); document.getElementById('habitInput').value = ''; saveHabits(); toggleInput(); }
     }
-
     function deleteHabit(id, event) {
-        event.stopPropagation();
-        if(confirm('Arrêter cette habitude ?')) { habits = habits.filter(h => h.id !== id); saveHabits(); } 
+        event.stopPropagation(); if(confirm('Arrêter cette habitude ?')) { habits = habits.filter(h => h.id !== id); saveHabits(); } 
     }
-
     function toggleDay(habitId, day, year = currentYear, month = currentMonth) {
         const habit = habits.find(h => h.id === habitId);
         if (habit) {
-            const dateId = `${year}-${month}-${day}`;
-            const index = habit.completions.indexOf(dateId);
-            
+            const dateId = `${year}-${month}-${day}`; const index = habit.completions.indexOf(dateId);
             if (index > -1) habit.completions.splice(index, 1);
-            else {
-                habit.completions.push(dateId);
-                if(year === currentYear && month === currentMonth && day === currentDay) {
-                    confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 }, colors: ['#0A84FF', '#ffffff'] });
-                }
-            }
-            saveHabits(); // Déclenche la sync
-            if(document.getElementById('historyModal').classList.contains('active')) renderModalGrid();
+            else { habit.completions.push(dateId); if(year === currentYear && month === currentMonth && day === currentDay) confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } }); }
+            saveHabits(); if(document.getElementById('historyModal').classList.contains('active')) renderModalGrid();
         }
     }
 
-    // --- RENDERING & UI (Reste identique à avant) ---
+    // --- RENDER ---
     function render() {
-        const container = document.getElementById('habitsList');
-        container.innerHTML = '';
+        const container = document.getElementById('habitsList'); container.innerHTML = '';
         if (habits.length === 0) container.innerHTML = '<div class="empty-state">Ajoutez une habitude pour commencer.</div>';
-
         habits.forEach(habit => {
-            const streak = calculateRealStreak(habit.completions);
-            const tier = getTierInfo(streak);
-            const prevStats = getPrevMonthStats(habit.completions);
-
-            const card = document.createElement('div');
-            card.className = 'habit-card';
+            const streak = calculateRealStreak(habit.completions); const tier = getTierInfo(streak); const prevStats = getPrevMonthStats(habit.completions);
+            const card = document.createElement('div'); card.className = 'habit-card';
             const streakHtml = streak > 1 ? `<div class="streak-badge ${tier.class}">🔥 ${streak} Jours • ${tier.label}</div>` : '';
-
-            card.innerHTML = `
-                <div class="habit-header">
-                    <div class="habit-info"><span class="habit-name" onclick="openModal(${habit.id})">${habit.name}</span>${streakHtml}</div>
-                    <button class="delete-btn" onclick="deleteHabit(${habit.id}, event)">×</button>
-                </div>
-                <div class="month-grid" id="grid-${habit.id}"></div>
-                <div class="stats-footer"><div class="prev-month-stat">${prevStats.name.toUpperCase()} : <strong>${prevStats.count}/${prevStats.total}</strong> (${prevStats.percentage}%)</div></div>
-            `;
+            card.innerHTML = `<div class="habit-header"><div class="habit-info"><span class="habit-name" onclick="openModal(${habit.id})">${habit.name}</span>${streakHtml}</div><button class="delete-btn" onclick="deleteHabit(${habit.id}, event)">×</button></div><div class="month-grid" id="grid-${habit.id}"></div><div class="stats-footer"><div class="prev-month-stat">${prevStats.name.toUpperCase()} : <strong>${prevStats.count}/${prevStats.total}</strong> (${prevStats.percentage}%)</div></div>`;
             container.appendChild(card);
             const grid = document.getElementById(`grid-${habit.id}`);
             for (let i = 1; i <= daysInMonth; i++) {
-                const dayBox = document.createElement('div'); dayBox.className = 'day-box'; dayBox.textContent = i;
-                const dateToCheck = `${currentYear}-${currentMonth}-${i}`;
+                const dayBox = document.createElement('div'); dayBox.className = 'day-box'; dayBox.textContent = i; const dateToCheck = `${currentYear}-${currentMonth}-${i}`;
                 if (i === currentDay) dayBox.classList.add('today');
-                if (habit.completions.includes(dateToCheck)) {
-                    dayBox.classList.add('completed');
-                    dayBox.classList.add(streak > 1 ? tier.class : 'tier-blue');
-                }
-                dayBox.onclick = () => toggleDay(habit.id, i);
-                grid.appendChild(dayBox);
+                if (habit.completions.includes(dateToCheck)) { dayBox.classList.add('completed'); dayBox.classList.add(streak > 1 ? tier.class : 'tier-blue'); }
+                dayBox.onclick = () => toggleDay(habit.id, i); grid.appendChild(dayBox);
             }
         });
     }
 
-    // --- HELPERS (Calculs, Modals...) ---
-    function calculateRealStreak(c) {
-        if (!c || c.length === 0) return 0;
-        const d = c.map(s => { const [y, m, day] = s.split('-').map(Number); return new Date(y, m, day); }).sort((a, b) => b - a);
-        let s = 0, check = new Date(currentYear, currentMonth, currentDay);
-        const same = (a, b) => a.toDateString() === b.toDateString();
-        if (d.length > 0 && same(d[0], check)) { s++; check.setDate(check.getDate() - 1); }
-        else { check.setDate(check.getDate() - 1); if (d.length > 0 && !same(d[0], check)) return 0; }
-        for (let date of d) { if (s === 1 && same(date, new Date(currentYear, currentMonth, currentDay))) continue; if (same(date, check)) { s++; check.setDate(check.getDate() - 1); } else break; }
-        return s;
-    }
+    // --- HELPERS ---
+    function calculateRealStreak(c) { if (!c || c.length === 0) return 0; const d = c.map(s => { const [y, m, day] = s.split('-').map(Number); return new Date(y, m, day); }).sort((a, b) => b - a); let s = 0, check = new Date(currentYear, currentMonth, currentDay); const same = (a, b) => a.toDateString() === b.toDateString(); if (d.length > 0 && same(d[0], check)) { s++; check.setDate(check.getDate() - 1); } else { check.setDate(check.getDate() - 1); if (d.length > 0 && !same(d[0], check)) return 0; } for (let date of d) { if (s === 1 && same(date, new Date(currentYear, currentMonth, currentDay))) continue; if (same(date, check)) { s++; check.setDate(check.getDate() - 1); } else break; } return s; }
     function getTierInfo(s) { if (s >= 28) return {class:'tier-gold',label:'LÉGENDAIRE'}; if (s >= 14) return {class:'tier-silver',label:'ARGENT'}; if (s >= 5) return {class:'tier-bronze',label:'BRONZE'}; return {class:'tier-blue',label:''}; }
-    function getPrevMonthStats(c) {
-        const d = new Date(currentYear, currentMonth - 1, 1);
-        const total = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-        const count = c.filter(x => { const [y, m] = x.split('-').map(Number); return y === d.getFullYear() && m === d.getMonth(); }).length;
-        return { name: d.toLocaleString('fr-FR',{month:'short'}), count, total, percentage: Math.round((count/total)*100) };
-    }
+    function getPrevMonthStats(c) { const d = new Date(currentYear, currentMonth - 1, 1); const total = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate(); const count = c.filter(x => { const [y, m] = x.split('-').map(Number); return y === d.getFullYear() && m === d.getMonth(); }).length; return { name: d.toLocaleString('fr-FR',{month:'short'}), count, total, percentage: Math.round((count/total)*100) }; }
     function toggleInput() { document.getElementById('addWrapper').classList.toggle('open'); document.getElementById('toggleBtn').classList.toggle('active'); if(document.getElementById('addWrapper').classList.contains('open')) setTimeout(()=>document.getElementById('habitInput').focus(),100); }
     function openSettings() { document.getElementById('settingsModal').classList.add('active'); }
     function openModal(id) { currentHabitId = id; const h = habits.find(x => x.id === id); if(!h)return; document.getElementById('modalTitle').textContent = h.name; modalYear=currentYear; modalMonth=currentMonth; renderModalGrid(); document.getElementById('historyModal').classList.add('active'); }
     function closeModal(id) { document.getElementById(id).classList.remove('active'); }
     window.onclick = e => { if(e.target.classList.contains('modal-overlay')) e.target.classList.remove('active'); };
     function changeModalMonth(step) { modalMonth += step; if (modalMonth > 11) { modalMonth = 0; modalYear++; } else if (modalMonth < 0) { modalMonth = 11; modalYear--; } renderModalGrid(); }
-    function renderModalGrid() {
-        const h = habits.find(x => x.id === currentHabitId); if(!h) return;
-        const grid = document.getElementById('modalGrid'); grid.innerHTML = '';
-        document.getElementById('modalDateLabel').textContent = new Date(modalYear, modalMonth, 1).toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
-        let first = new Date(modalYear, modalMonth, 1).getDay(); first = first === 0 ? 6 : first - 1;
-        for(let i=0; i<first; i++) grid.appendChild(Object.assign(document.createElement('div'),{className:'modal-day empty'}));
-        for(let i=1; i<=new Date(modalYear, modalMonth+1, 0).getDate(); i++) {
-            const d = document.createElement('div'); d.className = 'modal-day'; d.textContent = i;
-            if(h.completions.includes(`${modalYear}-${modalMonth}-${i}`)) d.classList.add('active');
-            d.onclick = () => toggleDay(h.id, i, modalYear, modalMonth);
-            grid.appendChild(d);
-        }
-    }
+    function renderModalGrid() { const h = habits.find(x => x.id === currentHabitId); if(!h) return; const grid = document.getElementById('modalGrid'); grid.innerHTML = ''; document.getElementById('modalDateLabel').textContent = new Date(modalYear, modalMonth, 1).toLocaleString('fr-FR', { month: 'long', year: 'numeric' }); let first = new Date(modalYear, modalMonth, 1).getDay(); first = first === 0 ? 6 : first - 1; for(let i=0; i<first; i++) grid.appendChild(Object.assign(document.createElement('div'),{className:'modal-day empty'})); for(let i=1; i<=new Date(modalYear, modalMonth+1, 0).getDate(); i++) { const d = document.createElement('div'); d.className = 'modal-day'; d.textContent = i; if(h.completions.includes(`${modalYear}-${modalMonth}-${i}`)) d.classList.add('active'); d.onclick = () => toggleDay(h.id, i, modalYear, modalMonth); grid.appendChild(d); } }
     function exportData() { const blob = new Blob([JSON.stringify(habits, null, 2)], { type: "application/json" }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `HabitOS_Backup_${new Date().toISOString().slice(0,10)}.json`; a.click(); }
     document.getElementById('habitInput').addEventListener('keypress', e => { if (e.key === 'Enter') addHabit(); });
-    // --- GESTION INTELLIGENTE DU RÉSEAU (OFFLINE/ONLINE) ---
-    
-    // 1. Quand internet revient
-    window.addEventListener('online', async () => {
-        console.log("Connexion rétablie ! Synchronisation...");
-        document.getElementById('statusDot').classList.add('online'); // Point vert
-        await pushDataToCloud(); // On envoie tout ce qui était en attente
-        alert('Connexion rétablie : Données synchronisées ! ☁️');
-    });
 
-    // 2. Quand internet coupe
-    window.addEventListener('offline', () => {
-        console.log("Connexion perdue. Passage en mode local.");
-        document.getElementById('statusDot').classList.remove('online'); // Point rouge/gris
-        document.getElementById('statusDot').style.backgroundColor = '#ff453a'; // Rouge
-    });
-
-    // 3. Vérification au démarrage
-    if (!navigator.onLine) {
-        document.getElementById('statusDot').classList.remove('online');
-        document.getElementById('statusDot').style.backgroundColor = '#ff453a';
-    }
+    // OFFLINE SYNC
+    window.addEventListener('online', async () => { console.log("Connexion rétablie !"); document.getElementById('statusDot').classList.add('online'); await pushDataToCloud(); alert('Connexion rétablie : Données synchronisées ! ☁️'); });
+    window.addEventListener('offline', () => { console.log("Connexion perdue."); document.getElementById('statusDot').classList.remove('online'); document.getElementById('statusDot').style.backgroundColor = '#ff453a'; });
+    if (!navigator.onLine) { document.getElementById('statusDot').classList.remove('online'); document.getElementById('statusDot').style.backgroundColor = '#ff453a'; }
 </script>
 
 </body>
